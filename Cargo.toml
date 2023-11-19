@@ -1,0 +1,20 @@
+[package]
+default-run = "parser_star"
+name = "excel_parser"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+calamine = "0.22.1"
+chrono = "0.4.31"
+dotenv = "0.15.0"
+jsonpath = "0.1.1"
+regex = "1.10.2"
+serde = "1.0.192"
+serde_json = "1.0.108"
+
+[[bin]]
+name = "parser_star"
+

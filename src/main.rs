@@ -1,0 +1,6 @@
+mod template;
+mod common;
+
+fn main() {
+    println!("Hello, world!");
+}
