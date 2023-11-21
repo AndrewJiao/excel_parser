@@ -1,18 +1,20 @@
-use std::collections::{HashMap, HashSet};
-use std::fs::{copy, File};
+use std::collections::HashMap;
+use std::fs::File;
 use std::io::Read;
-use std::ops::Index;
+
 use regex::Regex;
 use serde_json::Value;
 use serde_json::Map;
 
 //解析json模板 用${}解析
+#[derive(Debug)]
 pub struct BaseModel {
     origin_json: String,
     path: String,
     //替换parse用的,存入${any}
     parser_map: HashMap<String, String>,
     to_json: Vec<Map<String, Value>>,
+    to_json_template: Map<String, Value>
 }
 
 
@@ -22,6 +24,8 @@ pub fn parse(path: &str) -> BaseModel {
 
 
 impl BaseModel {
+
+
     ///开始解析
     // 1.正则解析${}
     // 2.初始化to_json
@@ -46,37 +50,41 @@ impl BaseModel {
     /// pattern:可以通过get_all_template_value_key方法获取
     ///
     pub fn replace_template_value(&mut self, patterns: Vec<String>, data: HashMap<usize, Vec<String>>) {
-        for (line, data) in data {
-            let line_sub = line - 1;
-            self.copy_json_template()
-            let json_line = self.to_json.get(line_sub).unwrap();
-
-
-
+        for (_, data) in data {
+            let mut json_line = self.copy_json_template();
+            self.do_replace(&mut json_line, &patterns, data);
+            self.insert_data(json_line);
         }
     }
     ///执行替换
-    fn do_replace(&self,json_line: &Map<String, Value>, patterns: &Vec<String>) {
-        for pattern in patterns {
+    fn do_replace(&mut self, json_line: &mut Map<String, Value>, patterns: &Vec<String>, data: Vec<String>) {
+        let len = patterns.len()-1;
+
+        for sub in 0..len {
+            let pattern = patterns.get(sub).unwrap();
+            let real_value = data.get(sub).unwrap();
+
             let json_index = self.parser_map.get(pattern).unwrap();
-            let json_index_key: Vec<String> = json_index.split(".").collect();
-            for ref key in json_index_key {
-                json_line.get(key)
+            let json_index_key: Vec<&str> = json_index.split(".").collect();
+            let mut json_value: Option<&mut Value> = None;
+            for key in json_index_key {
+                json_value = json_line.get_mut(key);
+            }
+            if let Some(json_value) = json_value {
+                *json_value = Value::String(real_value.to_string())
             }
         }
-
-
-
     }
-    fn copy_json_template(&mut self) {
-        if let Some(data) = self.to_json.get(self.to_json.len() - 1) {
-            let new_data = data.clone();
-            self.to_json.push(new_data);
-        }
+    ///
+    /// 复制一个json
+    ///
+    pub fn copy_json_template(&mut self) ->  Map<String, Value> {
+        self.to_json_template.clone()
     }
     ///init
     fn new(value: Map<String, Value>, path: String) -> Self {
-        let to_json = vec![value.clone()];
+        let to_json = Vec::new();
+        let to_json_template = value.clone();
 
         let all_pattern: HashMap<String, String> = try_capture("", &value);
         BaseModel {
@@ -84,7 +92,14 @@ impl BaseModel {
             parser_map: all_pattern,
             path,
             to_json,
+            to_json_template
         }
+    }
+    fn insert_data(&mut self, data: Map<String, Value>) {
+        self.to_json.push(data);
+    }
+    pub fn to_json(&self) -> &Vec<Map<String, Value>> {
+        &self.to_json
     }
 }
 
@@ -116,6 +131,7 @@ fn try_capture(parent_key: &str, json: &Map<String, Value>) -> HashMap<String, S
         }
     }
     res
+
 }
 
 fn extract(json: &str) -> Option<String> {
@@ -129,4 +145,3 @@ fn extract(json: &str) -> Option<String> {
         None
     }
 }
-

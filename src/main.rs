@@ -1,6 +1,8 @@
-mod template;
-mod common;
 
 fn main() {
-    println!("Hello, world!");
+    let mut vec:Vec<&str> = vec![];
+    vec.push("hello");
+    vec.push("hello2");
+
+
 }
