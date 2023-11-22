@@ -3,8 +3,8 @@ use std::fs::File;
 use std::io::Read;
 
 use regex::Regex;
-use serde_json::Value;
 use serde_json::Map;
+use serde_json::Value;
 
 //解析json模板 用${}解析
 #[derive(Debug)]
@@ -12,10 +12,43 @@ pub struct BaseModel {
     origin_json: String,
     path: String,
     //替换parse用的,存入${any}
-    parser_map: HashMap<String, String>,
+    //key = pattern:${any:number} value = json_index
+    parser_map: HashMap< String, ParseDescription>,
+    //to_json_template的模板替换完值后往这里复制
     to_json: Vec<Map<String, Value>>,
-    to_json_template: Map<String, Value>
+    //内部用，用于复制用
+    to_json_template: Map<String, Value>,
 }
+
+#[derive(Debug)]
+pub struct ParseDescription {
+    json_index: String,
+    pattern_type: String,
+    pattern_value: String,
+}
+
+impl ParseDescription {
+    pub fn new(json_index: String, pattern_type: String, pattern_value: String) -> Self {
+        Self { json_index, pattern_type, pattern_value }
+    }
+    pub fn pattern_value(&self) -> &str {
+        &self.pattern_value
+    }
+    pub fn generate_value(&self, data:&str) -> Value{
+         match self.pattern_type.as_str() {
+            "num" => Value::from(data.parse::<i32>().unwrap()),
+            "Number" => Value::from(data.parse::<i32>().unwrap()),
+            "Num" => Value::from(data.parse::<i32>().unwrap()),
+            "Boolean" => Value::from(data.parse::<bool>().unwrap()),
+            "bool" => Value::from(data.parse::<bool>().unwrap()),
+            "boolean" => Value::from(data.parse::<bool>().unwrap()),
+            "double" => Value::from(data.parse::<f64>().unwrap()),
+            "float" => Value::from(data.parse::<f32>().unwrap()),
+            _ => Value::from(data.to_string()),
+         }
+    }
+}
+
 
 
 pub fn parse(path: &str) -> BaseModel {
@@ -24,8 +57,6 @@ pub fn parse(path: &str) -> BaseModel {
 
 
 impl BaseModel {
-
-
     ///开始解析
     // 1.正则解析${}
     // 2.初始化to_json
@@ -58,27 +89,37 @@ impl BaseModel {
     }
     ///执行替换
     fn do_replace(&mut self, json_line: &mut Map<String, Value>, patterns: &Vec<String>, data: Vec<String>) {
-        let len = patterns.len()-1;
+        let len = patterns.len();
 
         for sub in 0..len {
             let pattern = patterns.get(sub).unwrap();
             let real_value = data.get(sub).unwrap();
 
-            let json_index = self.parser_map.get(pattern).unwrap();
-            let json_index_key: Vec<&str> = json_index.split(".").collect();
+            let parser_desc = self.parser_map.get(pattern).unwrap();
+            let json_index_key: Vec<&str> = parser_desc.json_index.split(".").collect();
             let mut json_value: Option<&mut Value> = None;
             for key in json_index_key {
                 json_value = json_line.get_mut(key);
             }
-            if let Some(json_value) = json_value {
-                *json_value = Value::String(real_value.to_string())
-            }
+
+            BaseModel::do_set_value(json_value,parser_desc,real_value);
+        }
+    }
+
+    ///
+    /// 设置json的值
+    /// 识别new_value的值的类型判断
+    ///
+    ///
+    fn do_set_value(old_value: Option<&mut Value>, new_value: &ParseDescription, real_value: &str) {
+        if let Some(json_value) = old_value {
+            *json_value = new_value.generate_value(real_value);
         }
     }
     ///
     /// 复制一个json
     ///
-    pub fn copy_json_template(&mut self) ->  Map<String, Value> {
+    pub fn copy_json_template(&mut self) -> Map<String, Value> {
         self.to_json_template.clone()
     }
     ///init
@@ -86,13 +127,13 @@ impl BaseModel {
         let to_json = Vec::new();
         let to_json_template = value.clone();
 
-        let all_pattern: HashMap<String, String> = try_capture("", &value);
+        let all_pattern: HashMap<String, ParseDescription> = try_capture("", &value);
         BaseModel {
             origin_json: serde_json::to_string(&value).unwrap(),
             parser_map: all_pattern,
             path,
             to_json,
-            to_json_template
+            to_json_template,
         }
     }
     fn insert_data(&mut self, data: Map<String, Value>) {
@@ -105,11 +146,11 @@ impl BaseModel {
 
 
 // 写一个递归方法负责递归json所有节点，提取所有${}
-fn try_capture(parent_key: &str, json: &Map<String, Value>) -> HashMap<String, String> {
+fn try_capture(parent_key: &str, json: &Map<String, Value>) -> HashMap<String, ParseDescription> {
     if json.is_empty() {
         return HashMap::new();
     }
-    let mut res: HashMap<String, String> = HashMap::new();
+    let mut res: HashMap<String, ParseDescription> = HashMap::new();
     for (current_key, value) in json {
         let mut current_path: String = "".to_string();
         if parent_key.is_empty() {
@@ -124,18 +165,33 @@ fn try_capture(parent_key: &str, json: &Map<String, Value>) -> HashMap<String, S
             }
             Value::String(ref maybe_pattern) => {
                 if let Some(pattern) = extract(maybe_pattern).take() {
-                    res.insert(pattern, current_path.to_string());
+                    //找到值往集合加入
+                    let description = parse_util(pattern, current_path);
+                    res.insert(description.pattern_value().to_string(), description);
                 }
             }
             _ => {}
         }
     }
     res
+}
 
+fn parse_util(pattern: String, json_index: String) -> ParseDescription {
+    let description: Vec<&str> = pattern.split(":").collect();
+    if description.len() < 1 {
+        panic!("json pattern is not success for value {}", pattern)
+    }
+    if description.len() == 1 {
+        ParseDescription::new(json_index, "String".to_string(), pattern)
+    } else {
+        let pattern_value = description.get(0).unwrap().to_string();
+        let pattern_type = description.get(1).unwrap().to_string();
+        ParseDescription::new(json_index, pattern_type, pattern_value)
+    }
 }
 
 fn extract(json: &str) -> Option<String> {
-    let regex = Regex::new("(\\$\\{[\\w]+\\})").unwrap();
+    let regex = Regex::new("(\\$\\{[\\S]+\\})").unwrap();
 
     if let Some(caps) = regex.captures(json) {
         let caps = regex.captures(json).unwrap();

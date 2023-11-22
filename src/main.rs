@@ -1,8 +1,7 @@
+use serde_json::Value;
 
 fn main() {
-    let mut vec:Vec<&str> = vec![];
-    vec.push("hello");
-    vec.push("hello2");
 
-
+        let value = Value::from(23);
+        println!("j={}",value.to_string())
 }
