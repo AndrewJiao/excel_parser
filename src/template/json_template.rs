@@ -13,7 +13,7 @@ pub struct BaseModel {
     path: String,
     //替换parse用的,存入${any}
     //key = pattern:${any:number} value = json_index
-    parser_map: HashMap< String, ParseDescription>,
+    parser_map: HashMap<String, ParseDescription>,
     //to_json_template的模板替换完值后往这里复制
     to_json: Vec<Map<String, Value>>,
     //内部用，用于复制用
@@ -22,20 +22,24 @@ pub struct BaseModel {
 
 #[derive(Debug)]
 pub struct ParseDescription {
-    json_index: String,
+    json_index: Vec<String>,
     pattern_type: String,
-    pattern_value: String,
+    pattern_key: String,
 }
 
 impl ParseDescription {
     pub fn new(json_index: String, pattern_type: String, pattern_value: String) -> Self {
-        Self { json_index, pattern_type, pattern_value }
+        let json_index = vec![json_index];
+        Self { json_index, pattern_type, pattern_key: pattern_value }
     }
-    pub fn pattern_value(&self) -> &str {
-        &self.pattern_value
+    pub fn pattern_key(&self) -> &str {
+        &self.pattern_key
     }
-    pub fn generate_value(&self, data:&str) -> Value{
-         match self.pattern_type.as_str() {
+    pub fn put_description(&mut self, mut desc: ParseDescription) {
+        self.json_index.push(desc.json_index.remove(0));
+    }
+    pub fn generate_value(&self, data: &str) -> Value {
+        match self.pattern_type.as_str() {
             "num" => Value::from(data.parse::<i32>().unwrap()),
             "Number" => Value::from(data.parse::<i32>().unwrap()),
             "Num" => Value::from(data.parse::<i32>().unwrap()),
@@ -45,10 +49,9 @@ impl ParseDescription {
             "double" => Value::from(data.parse::<f64>().unwrap()),
             "float" => Value::from(data.parse::<f32>().unwrap()),
             _ => Value::from(data.to_string()),
-         }
+        }
     }
 }
-
 
 
 pub fn parse(path: &str) -> BaseModel {
@@ -80,29 +83,28 @@ impl BaseModel {
     ///按照顺序将解析的结果替换到模板上
     /// pattern:可以通过get_all_template_value_key方法获取
     ///
-    pub fn replace_template_value(&mut self, patterns: Vec<String>, data: HashMap<usize, Vec<String>>) {
-        for (_, data) in data {
+    pub fn replace_template_value(&mut self, patterns: Vec<String>, data: &Vec<HashMap<String, String>>) {
+        for (head_value_map) in data {
             let mut json_line = self.copy_json_template();
-            self.do_replace(&mut json_line, &patterns, data);
+            self.do_replace(&mut json_line, &patterns, head_value_map);
             self.insert_data(json_line);
         }
     }
     ///执行替换
-    fn do_replace(&mut self, json_line: &mut Map<String, Value>, patterns: &Vec<String>, data: Vec<String>) {
-        let len = patterns.len();
+    fn do_replace(&mut self, json_line: &mut Map<String, Value>, patterns: &Vec<String>, data: &HashMap<String, String>) {
+        for pattern in patterns {
+            if let Some(real_value) = data.get(pattern) {
+                let parser_desc: &ParseDescription = self.parser_map.get(pattern).unwrap();
+                parser_desc.json_index.iter().for_each(|json_index| {
+                    let json_index_key: Vec<&str> = json_index.split(".").collect();
+                    let mut json_value: Option<&mut Value> = None;
+                    for key in json_index_key {
+                        json_value = json_line.get_mut(key);
+                    }
 
-        for sub in 0..len {
-            let pattern = patterns.get(sub).unwrap();
-            let real_value = data.get(sub).unwrap();
-
-            let parser_desc = self.parser_map.get(pattern).unwrap();
-            let json_index_key: Vec<&str> = parser_desc.json_index.split(".").collect();
-            let mut json_value: Option<&mut Value> = None;
-            for key in json_index_key {
-                json_value = json_line.get_mut(key);
+                    BaseModel::do_set_value(json_value, parser_desc, real_value);
+                })
             }
-
-            BaseModel::do_set_value(json_value,parser_desc,real_value);
         }
     }
 
@@ -166,8 +168,14 @@ fn try_capture(parent_key: &str, json: &Map<String, Value>) -> HashMap<String, P
             Value::String(ref maybe_pattern) => {
                 if let Some(pattern) = extract(maybe_pattern).take() {
                     //找到值往集合加入
-                    let description = parse_util(pattern, current_path);
-                    res.insert(description.pattern_value().to_string(), description);
+                    let description: ParseDescription = parse_util(pattern, current_path);
+
+                    let pattern_key = description.pattern_key();
+                    if let Some(descript) = res.get_mut(pattern_key) {
+                        descript.put_description(description);
+                    } else {
+                        res.insert(pattern_key.to_string(), description);
+                    }
                 }
             }
             _ => {}
