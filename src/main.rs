@@ -1,3 +1,5 @@
+mod template;
+
 use serde_json::Value;
 
 fn main() {

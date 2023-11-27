@@ -1,2 +1,3 @@
 pub mod json_template;
-mod excel;
+pub mod template_trait;
+pub mod excel;
