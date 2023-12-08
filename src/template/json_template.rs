@@ -9,10 +9,13 @@ use serde_json::Value;
 //解析json模板 用${}解析
 #[derive(Debug)]
 pub struct BaseModel {
+    //模板json原始值
     origin_json: String,
+    //路径
     path: String,
     //替换parse用的,存入${any}
     //key = pattern:${any:number} value = json_index
+    //
     parser_map: HashMap<String, ParseDescription>,
     //to_json_template的模板替换完值后往这里复制
     to_json: Vec<Map<String, Value>>,
@@ -20,6 +23,9 @@ pub struct BaseModel {
     to_json_template: Map<String, Value>,
 }
 
+///
+/// 用于存储表达式${?}
+/// 
 #[derive(Debug)]
 pub struct ParseDescription {
     json_index: Vec<String>,
@@ -147,7 +153,9 @@ impl BaseModel {
 }
 
 
-// 写一个递归方法负责递归json所有节点，提取所有${}
+///
+/// 写一个递归方法负责递归json所有节点，提取所有${}
+/// 
 fn try_capture(parent_key: &str, json: &Map<String, Value>) -> HashMap<String, ParseDescription> {
     if json.is_empty() {
         return HashMap::new();
