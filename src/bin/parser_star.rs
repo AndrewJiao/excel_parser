@@ -23,6 +23,7 @@ pub fn main() {
     let ref_patterns: Vec<&str> = patterns.iter().map(|e| e.as_str()).collect();
 
     let my_parser = ExcelParser;
+    
     let parse_result: Vec<HashMap<String, String>> = my_parser.do_parse(&excel_path, ref_patterns.as_slice()).unwrap();
 
     pattern_model.replace_template_value(patterns, &parse_result);
