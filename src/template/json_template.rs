@@ -130,7 +130,7 @@ impl BaseModel for ArrayModel<'static> {
 impl From<Vec<Box<dyn BaseModel>>> for ArrayModel<'_> {
     fn from(value: Vec<Box<dyn BaseModel>>) -> Self {
         let array = value.into_iter()
-            .map(|e | (e as Box<dyn Any>) .downcast::<ObjectModel>().unwrap())
+            .map(|e | (e. as Box<dyn Any>) .downcast::<ObjectModel>().unwrap())
             .collect();
         ArrayModel {
             model_array:array 
