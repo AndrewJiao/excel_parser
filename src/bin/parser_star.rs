@@ -17,7 +17,7 @@ pub fn main() {
     let excel_path = env::var("EXCEL_SOURCE").expect("no source");
     let template_path = env::var("JSON_TEMPLATE_PATH").expect("no source");
 
-    let mut pattern_model = json_template::parse(&template_path);
+    let mut pattern_model = json_template::parse(&template_path).unwrap();
 
     let patterns = pattern_model.get_all_template_value_key();
     let ref_patterns: Vec<&str> = patterns.iter().map(|e| e.as_str()).collect();

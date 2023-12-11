@@ -1,9 +1,22 @@
+use std::fmt::Debug;
+
 mod template;
 
-use serde_json::Value;
+trait MyTrait {}
+
+#[derive(Debug)]
+struct MyStruct;
+
+impl MyTrait for MyStruct {}
 
 fn main() {
+    print!("====star====");
+    let my_struct = MyStruct {};
+    test_static(my_struct);
+    print!("====end====");
+}
 
-        let value = Value::from(23);
-        println!("j={}",value.to_string())
+fn test_static<T>(t: T)
+    where T:'static + Debug{
+    print!("data = {:?}", t)
 }

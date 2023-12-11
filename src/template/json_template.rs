@@ -1,22 +1,26 @@
+use std::any::Any;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
+use std::ops::Deref;
+use std::ptr::addr_of;
 
 use regex::Regex;
 use serde_json::Map;
 use serde_json::Value;
 
-pub fn parse(path: &str) -> RootModel {
+pub fn parse(path: &str) -> Option<Box<RootModel>> {
     RootModel::parse(path)
 }
 
 ///
 /// 写一个递归方法负责递归json所有节点，提取所有${}
 ///
-fn try_extract_object_model(parent_key: &str, template_json: &Map<String, Value>) -> Option<dyn BaseModel> {
-    if template_json.is_empty() { None }
+fn try_extract_object_model<'a>(parent_key: &str, template_json: &Map<String, Value>) -> Option<Box<dyn BaseModel>> {
+    if template_json.is_empty() { return  None; }
     let mut res: HashMap<String, ParseDescription> = HashMap::new();
-    let mut sub_base:Vec<dyn BaseModel> = Vec::new();
+    let mut sub_base_vec: Vec<Box<dyn BaseModel>> = Vec::new();
+    
     for (current_key, value) in template_json {
         let mut current_path: String = "".to_string();
         if parent_key.is_empty() {
@@ -25,21 +29,23 @@ fn try_extract_object_model(parent_key: &str, template_json: &Map<String, Value>
             current_path = format!("{}.{}", parent_key, current_key);
         }
         match value {
-            Value::Array(sub_json_array)=>{
-                for sub_json in sub_json_array {
-                    match sub_json {
-                        Value::Object(each_json) => {
-                            if let Some(base) = try_extract_object_model("", each_json) {
-                                sub_base.push(base);
-                            }
+            Value::Array(sub_json_array) => {
+                let array_model: ArrayModel = sub_json_array.into_iter()
+                    .filter_map(|e| {
+                        if let Value::Object(sub_e) = e {
+                            Some(sub_e)
+                        } else {
+                            None
                         }
-                        _ => {}
-                    }
-                }
+                    })
+                    .filter_map(|sub_e: &Map<String, Value>| try_extract_object_model("", sub_e))
+                    .collect::<Vec<_>>().into();
+                sub_base_vec.push(Box::new(array_model))
             }
             Value::Object(sub_json) => {
-                let sub_vec = try_extract_object_model(&current_path, sub_json);
-                res.extend(sub_vec);
+                if let Some(sub) = try_extract_object_model(&current_path, sub_json) {
+                    sub_base_vec.push(sub);
+                }
             }
             Value::String(ref maybe_pattern) => {
                 if let Some(pattern) = extract(maybe_pattern).take() {
@@ -57,16 +63,16 @@ fn try_extract_object_model(parent_key: &str, template_json: &Map<String, Value>
             _ => {}
         }
     }
-    Some(ObjectModel {
-        parser_index :res,
+    Some(Box::new(ObjectModel {
+        parser_index: res,
         json_template: template_json,
-        sub_model: sub_base,
-    })
+        sub_model: sub_base_vec,
+    }))
 }
 
 ///
 /// 将模板字符串转为解析体ParseDescription
-/// 
+///
 fn parse_util(pattern: String, json_index: String) -> ParseDescription {
     let description: Vec<&str> = pattern.split(":").collect();
     if description.len() < 1 {
@@ -83,7 +89,7 @@ fn parse_util(pattern: String, json_index: String) -> ParseDescription {
 
 ///
 /// 提取模板自负床
-/// 
+///
 fn extract(json: &str) -> Option<String> {
     let regex = Regex::new("(\\$\\{[\\S]+\\})").unwrap();
 
@@ -95,8 +101,8 @@ fn extract(json: &str) -> Option<String> {
         None
     }
 }
+
 //解析json模板 用${}解析
-#[derive(Debug)]
 pub struct ObjectModel<'a> {
     //替换parse用的,存入${any}
     //key = pattern:${any:number} value = json_index
@@ -106,69 +112,78 @@ pub struct ObjectModel<'a> {
     //内部用，用于复制用
     json_template: &'a Map<String, Value>,
 
-    sub_model: Vec<dyn BaseModel>,
+    sub_model: Vec<Box<dyn BaseModel>>,
 }
 
-impl BaseModel for ObjectModel{
-    fn parse(path: &str) -> Self {
-        todo!()
-    }
+impl BaseModel for ObjectModel<'static> {
 }
 
 
-#[derive(Debug)]
-pub struct ArrayModel {
-    model_array: Vec<ObjectModel>
+pub struct ArrayModel<'a> {
+    model_array: Vec<Box<ObjectModel<'a>>>,
 }
 
-impl BaseModel for ArrayModel{
-    fn parse(path: &str) -> Self {
-        todo!()
+impl BaseModel for ArrayModel<'static> {
+    
+}
+
+impl From<Vec<Box<dyn BaseModel>>> for ArrayModel<'_> {
+    fn from(value: Vec<Box<dyn BaseModel>>) -> Self {
+        let array = value.into_iter()
+            .map(|e | (e as Box<dyn Any>) .downcast::<ObjectModel>().unwrap())
+            .collect();
+        ArrayModel {
+            model_array:array 
+        }
     }
 }
 
 ///
 /// 数据都存在root,其他用引用
-/// 
-pub  struct RootModel{
+///
+pub struct RootModel {
     //内部用，用于复制用
     json_template: Map<String, Value>,
     //to_json_template的模板替换完值后往这里复制
     to_json: Map<String, Value>,
     //
-    sub_model: Vec<dyn BaseModel>,
-    
+    sub_model: Vec<Box<dyn BaseModel>>,
+
 }
 
-impl BaseModel for RootModel{
+impl BaseModel for RootModel {
+}
+impl RootModel{
+
     ///开始解析
     // 1.正则解析${}
     // 2.初始化to_json
-    fn parse(path: &str) -> Self {
+    fn parse(path: &str) -> Option<Box<RootModel>> {
         let mut file = File::open(path).expect("unKnow file json template");
         let context = &mut String::new();
         file.read_to_string(context);
 
         let json_template: Map<String, Value> = serde_json::from_slice(context.as_bytes()).unwrap();
-        
-        if let Some(sub_model)= try_extract_object_model("", &json_template){
-            RootModel{
+
+        if let Some(sub_model) = try_extract_object_model("", &json_template) {
+            Some(Box::new(RootModel {
                 json_template,
                 to_json: Map::new(),
-                sub_model:vec![sub_model]
-            }
-        }else {
+                sub_model: vec![sub_model],
+            }))
+        } else {
             panic!("un know value exception")
         }
-
     }
 }
-pub trait BaseModel {
-    fn parse(path: &str) -> Self;
+
+pub trait BaseModel  {
+    // fn parse(path: &str) -> Option<Box<dyn BaseModel>>{
+    //     None
+    // }
 }
 
-impl ObjectModel {
-
+impl ObjectModel<'_> {
     //
     // 获取所有要替换的template_key
     //
@@ -220,19 +235,11 @@ impl ObjectModel {
     pub fn copy_json_template(&mut self) -> Map<String, Value> {
         self.json_template.clone()
     }
-    ///init
-    fn insert_data(&mut self, data: Map<String, Value>) {
-        self.to_json.push(data);
-    }
-    pub fn to_json(&self) -> &Vec<Map<String, Value>> {
-        &self.to_json
-    }
 }
 
 ///
 /// 用于存储表达式${?}
-/// 
-#[derive(Debug)]
+///
 pub struct ParseDescription {
     json_index: Vec<String>,
     pattern_type: String,
