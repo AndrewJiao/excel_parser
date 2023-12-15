@@ -19,15 +19,15 @@ pub fn main() {
 
     let mut pattern_model = json_template::parse(&template_path).unwrap();
 
-    let patterns = pattern_model.get_all_template_value_key();
-    let ref_patterns: Vec<&str> = patterns.iter().map(|e| e.as_str()).collect();
-
-    let my_parser = ExcelParser;
-    
-    let parse_result: Vec<HashMap<String, String>> = my_parser.do_parse(&excel_path, ref_patterns.as_slice()).unwrap();
-
-    pattern_model.replace_template_value(patterns, &parse_result);
-    println!("value={:?}", pattern_model);
+    // let patterns = pattern_model.get_all_template_value_key();
+    // let ref_patterns: Vec<&str> = patterns.iter().map(|e| e.as_str()).collect();
+    // 
+    // let my_parser = ExcelParser;
+    // 
+    // let parse_result: Vec<HashMap<String, String>> = my_parser.do_parse(&excel_path, ref_patterns.as_slice()).unwrap();
+    // 
+    // pattern_model.replace_template_value(patterns, &parse_result);
+    // println!("value={:?}", pattern_model);
     println!("===============================");
-    println!("to_json {:?}", pattern_model.to_json())
+    // println!("to_json {:?}", pattern_model())
 }

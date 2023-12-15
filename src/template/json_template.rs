@@ -7,6 +7,7 @@ use std::ptr::addr_of;
 
 use regex::Regex;
 use serde_json::Map;
+use serde_json::ser::Formatter;
 use serde_json::Value;
 
 pub fn parse(path: &str) -> Option<Box<RootModel>> {
@@ -16,7 +17,7 @@ pub fn parse(path: &str) -> Option<Box<RootModel>> {
 ///
 /// 写一个递归方法负责递归json所有节点，提取所有${}
 ///
-fn try_extract_object_model<'a>(parent_key: &str, template_json: &Map<String, Value>) -> Option<Box<dyn BaseModel>> {
+fn try_extract_object_model<'a, 'b>(parent_key: &'b str, template_json: &'static serde_json::Map<std::string::String, serde_json::Value>) -> Option<Box<dyn BaseModel + 'a >> {
     if template_json.is_empty() { return  None; }
     let mut res: HashMap<String, ParseDescription> = HashMap::new();
     let mut sub_base_vec: Vec<Box<dyn BaseModel>> = Vec::new();
@@ -127,10 +128,20 @@ impl BaseModel for ArrayModel<'static> {
     
 }
 
+
+trait ToAny{
+    fn to_any(self) ->Box<dyn Any>;
+}
+impl <T:BaseModel + 'static> ToAny for T{
+    fn to_any(self) -> Box<dyn Any> {
+        Box::new(self)
+    }
+}  
+
 impl From<Vec<Box<dyn BaseModel>>> for ArrayModel<'_> {
     fn from(value: Vec<Box<dyn BaseModel>>) -> Self {
         let array = value.into_iter()
-            .map(|e | (e. as Box<dyn Any>) .downcast::<ObjectModel>().unwrap())
+            .map(|e | e.to_any().downcast::<ObjectModel>().unwrap())
             .collect();
         ArrayModel {
             model_array:array 
@@ -145,7 +156,7 @@ pub struct RootModel {
     //内部用，用于复制用
     json_template: Map<String, Value>,
     //to_json_template的模板替换完值后往这里复制
-    to_json: Map<String, Value>,
+    // json_result: Map<String, Value>,
     //
     sub_model: Vec<Box<dyn BaseModel>>,
 
@@ -168,7 +179,7 @@ impl RootModel{
         if let Some(sub_model) = try_extract_object_model("", &json_template) {
             Some(Box::new(RootModel {
                 json_template,
-                to_json: Map::new(),
+                // json_result: Map::new(),
                 sub_model: vec![sub_model],
             }))
         } else {
@@ -177,7 +188,7 @@ impl RootModel{
     }
 }
 
-pub trait BaseModel  {
+pub trait BaseModel  :ToAny{
     // fn parse(path: &str) -> Option<Box<dyn BaseModel>>{
     //     None
     // }
@@ -198,7 +209,7 @@ impl ObjectModel<'_> {
         for (head_value_map) in data {
             let mut json_line = self.copy_json_template();
             self.do_replace(&mut json_line, &patterns, head_value_map);
-            self.insert_data(json_line);
+            // self.insert_data(json_line);
         }
     }
     ///执行替换
@@ -218,6 +229,8 @@ impl ObjectModel<'_> {
             }
         }
     }
+    
+    
 
     ///
     /// 设置json的值

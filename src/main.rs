@@ -1,38 +1,28 @@
 use std::any::Any;
 use std::fmt::Debug;
-use std::mem::needs_drop;
-
-
-trait MyTrait: Any + AsSuper {}
 
 #[derive(Debug)]
-struct MyStruct;
+struct Sun;
 
-impl MyTrait for MyStruct {}
+trait Super {}
 
-impl<T: MyTrait> AsSuper for T {
-    fn as_super(self: Box<Self>) -> Box<dyn Any> {
-        self
+
+fn main() {
+    let sun = Sun;
+    let zero = call_on_ref_zero(sun);
+}
+
+impl PartialEq<i32> for &Sun {
+    fn eq(&self, other: &i32) -> bool {
+        todo!()
     }
 }
 
-trait AsSuper {
-    fn as_super(self: Box<Self>) -> Box<dyn Any>;
+fn call_on_ref_zero<F>(f: F) -> bool
+    where for <'a>
+        &'a F: PartialEq<&'a i32>
+{
+    let zero = 0;
+    &f == &zero
 }
 
-fn main() {
-    //given
-    let vec: Vec<Box<dyn MyTrait>> = vec![Box::new(MyStruct), Box::new(MyStruct)];
-    let value_vec: Vec<Box<MyStruct>> = vec.into_iter()
-        .filter_map(|obj| {
-            Some(obj.as_super().downcast::<MyStruct>().unwrap())
-        })
-        .collect();
-
-    // 打印转换后的向量  
-    println!("{:?}", value_vec);
-}
-
-fn test_static<T>(t: T) where T: 'static + Debug {
-    print!("data = {:?}", t)
-}
