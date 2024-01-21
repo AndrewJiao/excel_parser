@@ -1,12 +1,14 @@
-[package]
-default-run = "parser_star"
-name = "excel_parser"
+[workspace]
+members = ["excel_parser", "entry_star", "demo"]
+resolver = "1"
+
+[workspace.package]
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
+[workspace.dependencies]
 calamine = "0.22.1"
 chrono = "0.4.31"
 dotenv = "0.15.0"
@@ -16,6 +18,4 @@ serde = "1.0.192"
 serde_json = "1.0.108"
 thiserror = "1.0.50"
 
-[[bin]]
-name = "parser_star"
 

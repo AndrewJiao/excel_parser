@@ -1,0 +1,18 @@
+[package]
+name = "excel_parser"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+path = "src/lib.rs"
+
+[dependencies]
+calamine.workspace = true
+chrono.workspace = true
+dotenv.workspace = true
+jsonpath.workspace = true
+regex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
