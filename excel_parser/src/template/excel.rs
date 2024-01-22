@@ -43,6 +43,11 @@ impl Parser for ExcelParser {
     }
 }
 
+///
+/// 构建head-value的map结构
+/// 1.head是表头
+/// 2.value是字段值
+///
 fn contribute_head_value_map(cells: Vec<String>, headers: &[&str]) -> HashMap<String, String> {
     let mut sub = 0;
     cells.into_iter().map(|value| {

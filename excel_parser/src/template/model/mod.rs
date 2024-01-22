@@ -92,3 +92,9 @@ impl ParseDescription {
         }
     }
 }
+
+enum ObjectType {
+    Array(Vec<Box<dyn BaseModel>>),
+    Object(Box<dyn BaseModel>),
+    None,
+}

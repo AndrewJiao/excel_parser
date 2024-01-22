@@ -6,7 +6,7 @@ use std::rc::Rc;
 use serde_json::{Map, Value};
 
 use crate::template::json_template;
-use crate::template::model::BaseModel;
+use crate::template::model::{BaseModel, ObjectType};
 
 pub type OriginMapRef = Rc<Map<String, Value>>;
 
@@ -31,6 +31,7 @@ impl BaseModel for RootModel {
             ObjectType::Object(value) => {
                 value.get_all_template_value_key()
             }
+            _ => {vec![]}
         }
     }
 
@@ -44,6 +45,7 @@ impl BaseModel for RootModel {
             ObjectType::Object(value) => {
                 value.replace_template_value(patterns, data)
             }
+            _ => {}
         }
     }
 
@@ -57,6 +59,7 @@ impl BaseModel for RootModel {
             ObjectType::Object(value) => {
                 value.get_final_json_result()
             }
+            _ => {Value::Null}
         }
     }
 }
@@ -92,7 +95,3 @@ impl RootModel {
     }
 }
 
-enum ObjectType {
-    Array(Vec<Box<dyn BaseModel>>),
-    Object(Box<dyn BaseModel>),
-}

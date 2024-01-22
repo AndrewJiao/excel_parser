@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use serde_json::{Map, Value};
 
-use crate::template::model::{BaseModel, ParseDescription};
+use crate::template::model::{BaseModel, ObjectType, ParseDescription};
 use crate::template::model::root_model::OriginMapRef;
 
 //解析json模板 用${}解析
@@ -16,19 +16,26 @@ pub struct ObjectModel {
     //内部用，用于复制用
     pub json_template: OriginMapRef,
 
-    pub sub_model: Vec<Box<dyn BaseModel>>,
+    pub sub_model: ObjectType,
 
     pub json_result: Option<Map<String, Value>>,
 }
 
 impl BaseModel for ObjectModel {
-    //
-    // 获取所有要替换的template_key
-    //
+    ///
+    /// 获取所有要替换的template_key
+    ///
     fn get_all_template_value_key(&self) -> Vec<String> {
         let mut current: Vec<String> = self.parser_index.iter().map(|(pattern, _)| pattern.to_string()).collect();
-        let mut sub: Vec<String> = self.sub_model.iter().flat_map(|sub| sub.get_all_template_value_key()).collect();
-        current.append(&mut sub);
+
+        match &self.sub_model {
+            ObjectType::Array(array) => {
+                let mut sub: Vec<String> = array.iter().flat_map(|sub| sub.get_all_template_value_key()).collect();
+                current.append(&mut sub);
+            }
+            ObjectType::Object(obj) => current.append(&mut obj.get_all_template_value_key()),
+            ObjectType::None => {}
+        }
         current
     }
 
@@ -37,10 +44,19 @@ impl BaseModel for ObjectModel {
     /// pattern:可以通过get_all_template_value_key方法获取
     ///
     fn replace_template_value(&mut self, patterns: &Vec<String>, data: &Vec<HashMap<String, String>>) {
+        //先把自己替换了
         for head_value_map in data {
             let mut json_2_be_result = self.copy_json_template();
             self.do_replace(&mut json_2_be_result, &patterns, head_value_map);
             self.push_json_result(json_2_be_result)
+        }
+        //考虑sub的情况
+        match &mut self.sub_model {
+            ObjectType::Array(arr) => {
+
+            }
+            ObjectType::Object(_) => {}
+            ObjectType::None => {}
         }
     }
 
@@ -96,5 +112,13 @@ impl ObjectModel {
         } else {
             self.json_result = Some(real_json)
         }
+    }
+
+    pub  fn get_sub_model_template_value_key(&self) -> Vec<String> {
+        let mut current: Vec<String> = self.parser_index.iter().map(|(pattern, _)| pattern.to_string()).collect();
+        // self.sub_model
+        let mut sub: Vec<String> = self.sub_model.iter().flat_map(|sub| sub.get_all_template_value_key()).collect();
+        current.append(&mut sub);
+        current
     }
 }
