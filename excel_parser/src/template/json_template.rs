@@ -4,7 +4,7 @@ use std::rc::Rc;
 use regex::Regex;
 use serde_json::{Map, Value};
 
-use crate::template::model::{BaseModel, ParseDescription};
+use crate::template::model::{BaseModel, ObjectType, ParseDescription};
 use crate::template::model::array_model::ArrayModel;
 use crate::template::model::object_model::ObjectModel;
 use crate::template::model::root_model::{OriginMapRef, RootModel};
@@ -16,10 +16,10 @@ pub fn parse(path: &str) -> Option<Box<RootModel>> {
 ///
 /// 写一个递归方法负责递归json所有节点，提取所有${}
 ///
-pub(crate) fn try_extract_object_model(parent_key: &str, origin_json: OriginMapRef) -> Option<Box<dyn BaseModel + 'static>> {
+pub(crate) fn try_extract_object_model(parent_key: &str, origin_json: OriginMapRef) -> Option<ObjectType> {
     if origin_json.is_empty() { return None; }
     let mut res: HashMap<String, ParseDescription> = HashMap::new();
-    let mut sub_base_vec: Vec<Box<dyn BaseModel>> = Vec::new();
+    let mut sub_base_vec: HashMap<String, ObjectType> = HashMap::new();
 
     for (current_key, value) in origin_json.iter() {
         let current_path: String;
@@ -42,7 +42,7 @@ pub(crate) fn try_extract_object_model(parent_key: &str, origin_json: OriginMapR
                         try_extract_object_model("", Rc::from_raw(sub_e))
                     })
                     .collect::<Vec<_>>().into();
-                sub_base_vec.push(Box::new(array_model))
+                sub_base_vec.insert(current_key.to_string(), ObjectType::Array(Box::from(array_model)))
             }
             Value::Object(sub_json) => {
                 let rc: Rc<Map<String, Value>>;
@@ -50,7 +50,7 @@ pub(crate) fn try_extract_object_model(parent_key: &str, origin_json: OriginMapR
                     rc = Rc::from_raw(sub_json);
                 }
                 if let Some(sub) = try_extract_object_model(&current_path, rc) {
-                    sub_base_vec.push(sub);
+                    sub_base_vec.insert(current_path.to_string(), ObjectType::Object(Box::from(sub)));
                 }
             }
             Value::String(ref maybe_pattern) => {
@@ -69,12 +69,12 @@ pub(crate) fn try_extract_object_model(parent_key: &str, origin_json: OriginMapR
             _ => {}
         }
     }
-    Some(Box::from(ObjectModel {
+    Some(ObjectType::Object(Box::from(ObjectModel {
         parser_index: res,
         json_template: origin_json,
         sub_model: sub_base_vec,
         json_result: None,
-    }))
+    })))
 }
 
 ///

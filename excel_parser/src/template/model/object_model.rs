@@ -16,7 +16,8 @@ pub struct ObjectModel {
     //内部用，用于复制用
     pub json_template: OriginMapRef,
 
-    pub sub_model: ObjectType,
+    // 一个object有多个属性
+    pub sub_model: HashMap<String, ObjectType>,
 
     pub json_result: Option<Map<String, Value>>,
 }
@@ -27,15 +28,16 @@ impl BaseModel for ObjectModel {
     ///
     fn get_all_template_value_key(&self) -> Vec<String> {
         let mut current: Vec<String> = self.parser_index.iter().map(|(pattern, _)| pattern.to_string()).collect();
-
-        match &self.sub_model {
-            ObjectType::Array(array) => {
-                let mut sub: Vec<String> = array.iter().flat_map(|sub| sub.get_all_template_value_key()).collect();
-                current.append(&mut sub);
+        &self.sub_model.iter().for_each(|(_, sub)| {
+            match sub {
+                ObjectType::Array(array) => {
+                    let mut sub: Vec<String> = array.iter().flat_map(|sub| sub.get_all_template_value_key()).collect();
+                    current.append(&mut sub);
+                }
+                ObjectType::Object(obj) => current.append(&mut obj.get_all_template_value_key()),
+                ObjectType::None => {}
             }
-            ObjectType::Object(obj) => current.append(&mut obj.get_all_template_value_key()),
-            ObjectType::None => {}
-        }
+        });
         current
     }
 
@@ -51,18 +53,42 @@ impl BaseModel for ObjectModel {
             self.push_json_result(json_2_be_result)
         }
         //考虑sub的情况
-        match &mut self.sub_model {
-            ObjectType::Array(arr) => {
-
+        self.sub_model.iter_mut().for_each(|(_, value)| {
+            match value {
+                ObjectType::Array(arr) => {
+                    arr.iter_mut().flat_map(|sub| sub.replace_template_value(patterns, data)).collect();
+                }
+                ObjectType::Object(obj) => {
+                    obj.replace_template_value(patterns, data);
+                }
+                ObjectType::None => {}
             }
-            ObjectType::Object(_) => {}
-            ObjectType::None => {}
-        }
+        })
     }
 
     fn get_final_json_result(&self) -> Value {
-        let clone_map = self.json_result.clone();
-        Value::Object(clone_map.unwrap())
+        let mut clone_map: Option<Map<String, Value>> = self.json_result.clone();
+
+        if let Some(mut map) = clone_map {
+            //考虑sub的情况
+            self.sub_model.iter().for_each(|(key, value)| {
+                match value {
+                    ObjectType::Array(arr) => {
+                        let json_values: Vec<Value> = arr.iter().flat_map(|sub| sub.get_final_json_result()).collect();
+
+                        map.insert(key.to_string(),Value::Array(json_values));
+                    }
+                    ObjectType::Object(obj) => {
+                        let json_value = obj.get_final_json_result();
+                        map.insert(key.to_string(), json_value);
+                    }
+                    ObjectType::None => {}
+                }
+            });
+            return Value::Object(map);
+        }else{
+            Value::Null
+        }
     }
 }
 
@@ -114,7 +140,7 @@ impl ObjectModel {
         }
     }
 
-    pub  fn get_sub_model_template_value_key(&self) -> Vec<String> {
+    pub fn get_sub_model_template_value_key(&self) -> Vec<String> {
         let mut current: Vec<String> = self.parser_index.iter().map(|(pattern, _)| pattern.to_string()).collect();
         // self.sub_model
         let mut sub: Vec<String> = self.sub_model.iter().flat_map(|sub| sub.get_all_template_value_key()).collect();

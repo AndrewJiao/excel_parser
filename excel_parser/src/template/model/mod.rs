@@ -93,8 +93,8 @@ impl ParseDescription {
     }
 }
 
-enum ObjectType {
-    Array(Vec<Box<dyn BaseModel>>),
+pub enum ObjectType {
+    Array(Box<dyn BaseModel>),
     Object(Box<dyn BaseModel>),
     None,
 }
