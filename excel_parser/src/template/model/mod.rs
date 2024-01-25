@@ -2,6 +2,8 @@ use std::any::Any;
 use std::collections::HashMap;
 
 use serde_json::Value;
+use crate::template::model::array_model::ArrayModel;
+use crate::template::model::object_model::ObjectModel;
 
 use crate::template::template_trait::ParserError;
 
@@ -93,8 +95,9 @@ impl ParseDescription {
     }
 }
 
+#[derive(Debug)]
 pub enum ObjectType {
-    Array(Box<dyn BaseModel>),
-    Object(Box<dyn BaseModel>),
+    Array(ArrayModel),
+    Object(ObjectModel),
     None,
 }

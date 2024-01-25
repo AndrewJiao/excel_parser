@@ -4,7 +4,7 @@ use std::rc::Rc;
 use regex::Regex;
 use serde_json::{Map, Value};
 
-use crate::template::model::{BaseModel, ObjectType, ParseDescription};
+use crate::template::model::{ObjectType, ParseDescription};
 use crate::template::model::array_model::ArrayModel;
 use crate::template::model::object_model::ObjectModel;
 use crate::template::model::root_model::{OriginMapRef, RootModel};
@@ -38,11 +38,13 @@ pub(crate) fn try_extract_object_model(parent_key: &str, origin_json: OriginMapR
                             None
                         }
                     })
-                    .filter_map(|sub_e| unsafe {
-                        try_extract_object_model("", Rc::from_raw(sub_e))
+                    .filter_map(|sub_e| {
+                        let rc = safe_from_raw(sub_e);
+                        try_extract_object_model("", rc)
                     })
-                    .collect::<Vec<_>>().into();
-                sub_base_vec.insert(current_key.to_string(), ObjectType::Array(Box::from(array_model)))
+                    .collect::<Vec<ObjectType>>().into();
+                // sub_base_vec.insert(current_key.to_string(), ObjectType::Array(Box::from(array_model)))
+                sub_base_vec.insert(current_key.to_string(), ObjectType::Array(array_model));
             }
             Value::Object(sub_json) => {
                 let rc: Rc<Map<String, Value>>;
@@ -50,7 +52,8 @@ pub(crate) fn try_extract_object_model(parent_key: &str, origin_json: OriginMapR
                     rc = Rc::from_raw(sub_json);
                 }
                 if let Some(sub) = try_extract_object_model(&current_path, rc) {
-                    sub_base_vec.insert(current_path.to_string(), ObjectType::Object(Box::from(sub)));
+                    // sub_base_vec.insert(current_path.to_string(), ObjectType::Object(Box::from(sub)));
+                    sub_base_vec.insert(current_path.to_string(), sub);
                 }
             }
             Value::String(ref maybe_pattern) => {
@@ -69,12 +72,20 @@ pub(crate) fn try_extract_object_model(parent_key: &str, origin_json: OriginMapR
             _ => {}
         }
     }
-    Some(ObjectType::Object(Box::from(ObjectModel {
+    Some(ObjectType::Object(ObjectModel {
         parser_index: res,
         json_template: origin_json,
         sub_model: sub_base_vec,
         json_result: None,
-    })))
+    }))
+}
+
+fn safe_from_raw(sub_e: &Map<String, Value>) -> Rc<Map<String, Value>> {
+    let rc: Rc<Map<String, Value>>;
+    unsafe {
+        rc = Rc::from_raw(sub_e);
+    }
+    rc
 }
 
 ///

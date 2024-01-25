@@ -7,6 +7,7 @@ use crate::template::model::{BaseModel, ObjectType, ParseDescription};
 use crate::template::model::root_model::OriginMapRef;
 
 //解析json模板 用${}解析
+#[derive(Debug)]
 pub struct ObjectModel {
     //替换parse用的,存入${any}
     //key = pattern:${any:number} value = json_index
@@ -28,10 +29,10 @@ impl BaseModel for ObjectModel {
     ///
     fn get_all_template_value_key(&self) -> Vec<String> {
         let mut current: Vec<String> = self.parser_index.iter().map(|(pattern, _)| pattern.to_string()).collect();
-        &self.sub_model.iter().for_each(|(_, sub)| {
+        let _ = &self.sub_model.iter().for_each(|(_, sub)| {
             match sub {
                 ObjectType::Array(array) => {
-                    let mut sub: Vec<String> = array.iter().flat_map(|sub| sub.get_all_template_value_key()).collect();
+                    let mut sub = array.get_all_template_value_key();
                     current.append(&mut sub);
                 }
                 ObjectType::Object(obj) => current.append(&mut obj.get_all_template_value_key()),
@@ -55,28 +56,22 @@ impl BaseModel for ObjectModel {
         //考虑sub的情况
         self.sub_model.iter_mut().for_each(|(_, value)| {
             match value {
-                ObjectType::Array(arr) => {
-                    arr.iter_mut().flat_map(|sub| sub.replace_template_value(patterns, data)).collect();
-                }
-                ObjectType::Object(obj) => {
-                    obj.replace_template_value(patterns, data);
-                }
+                ObjectType::Array(arr) => { arr.replace_template_value(patterns, data); }
+                ObjectType::Object(obj) => { obj.replace_template_value(patterns, data); }
                 ObjectType::None => {}
             }
         })
     }
 
     fn get_final_json_result(&self) -> Value {
-        let mut clone_map: Option<Map<String, Value>> = self.json_result.clone();
-
+        let clone_map: Option<Map<String, Value>> = self.json_result.clone();
         if let Some(mut map) = clone_map {
             //考虑sub的情况
             self.sub_model.iter().for_each(|(key, value)| {
                 match value {
                     ObjectType::Array(arr) => {
-                        let json_values: Vec<Value> = arr.iter().flat_map(|sub| sub.get_final_json_result()).collect();
-
-                        map.insert(key.to_string(),Value::Array(json_values));
+                        let json_values = arr.get_final_json_result();
+                        map.insert(key.to_string(), json_values);
                     }
                     ObjectType::Object(obj) => {
                         let json_value = obj.get_final_json_result();
@@ -86,7 +81,7 @@ impl BaseModel for ObjectModel {
                 }
             });
             return Value::Object(map);
-        }else{
+        } else {
             Value::Null
         }
     }
@@ -96,16 +91,18 @@ impl ObjectModel {
     ///执行替换
     fn do_replace(&mut self, json_line: &mut Map<String, Value>, patterns: &Vec<String>, data: &HashMap<String, String>) {
         for pattern in patterns {
+            // println!("{},index = {:?}", pattern.to_string(),self.parser_index);
             if let Some(real_value) = data.get(pattern) {
-                let parser_desc: &ParseDescription = self.parser_index.get(pattern).unwrap();
-                parser_desc.json_index.iter().for_each(|json_index| {
-                    let json_index_key: Vec<&str> = json_index.split(".").collect();
-                    let mut json_value: Option<&mut Value> = None;
-                    for key in json_index_key {
-                        json_value = json_line.get_mut(key);
-                    }
-                    ObjectModel::do_set_value(json_value, parser_desc, real_value);
-                })
+                if let Some(parser_desc) = self.parser_index.get(pattern) {
+                    parser_desc.json_index.iter().for_each(|json_index| {
+                        let json_index_key: Vec<&str> = json_index.split(".").collect();
+                        let mut json_value: Option<&mut Value> = None;
+                        for key in json_index_key {
+                            json_value = json_line.get_mut(key);
+                        }
+                        ObjectModel::do_set_value(json_value, parser_desc, real_value);
+                    })
+                }
             }
         }
     }
@@ -140,11 +137,11 @@ impl ObjectModel {
         }
     }
 
-    pub fn get_sub_model_template_value_key(&self) -> Vec<String> {
-        let mut current: Vec<String> = self.parser_index.iter().map(|(pattern, _)| pattern.to_string()).collect();
-        // self.sub_model
-        let mut sub: Vec<String> = self.sub_model.iter().flat_map(|sub| sub.get_all_template_value_key()).collect();
-        current.append(&mut sub);
-        current
-    }
+    // pub fn get_sub_model_template_value_key(&self) -> Vec<String> {
+    //     let mut current: Vec<String> = self.parser_index.iter().map(|(pattern, _)| pattern.to_string()).collect();
+    //     // self.sub_model
+    //     let mut sub: Vec<String> = self.sub_model.iter().flat_map(|(_, sub)| sub.get_all_template_value_key()).collect();
+    //     current.append(&mut sub);
+    //     current
+    // }
 }

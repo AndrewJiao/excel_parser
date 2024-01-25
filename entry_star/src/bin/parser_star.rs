@@ -13,6 +13,7 @@ pub fn main() {
 
     let mut pattern_model: Box<RootModel> = template::json_template::parse(&template_path).unwrap();
 
+    println!("models = {:?}", pattern_model);
     let patterns = pattern_model.get_all_template_value_key();
     println!("patterns = {:?}", patterns);
 
