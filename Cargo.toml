@@ -1,5 +1,5 @@
 [workspace]
-members = ["excel_parser", "entry_star", "demo"]
+members = ["excel_parser", "entry_star"]
 resolver = "1"
 
 [workspace.package]

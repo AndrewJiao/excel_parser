@@ -58,7 +58,7 @@ pub trait BaseModel: ToAny + Any {
 ///
 /// 用于存储表达式${?}
 ///
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct ParseDescription {
     pub json_index: Vec<String>,
     pub pattern_type: String,
@@ -95,7 +95,7 @@ impl ParseDescription {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum ObjectType {
     Array(ArrayModel),
     Object(ObjectModel),

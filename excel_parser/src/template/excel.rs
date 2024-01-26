@@ -32,7 +32,6 @@ impl Parser for ExcelParser {
                 if let Some(row) = iter.next() {
                     let cells: Vec<String> = row?;
                     // 将解析的结果放入vec
-                    println!("cells = {:?}", cells);
                     result.push(contribute_head_value_map(cells, &real_headers));
                 } else {
                     result.push(HashMap::new());

@@ -13,9 +13,7 @@ pub fn main() {
 
     let mut pattern_model: Box<RootModel> = template::json_template::parse(&template_path).unwrap();
 
-    println!("models = {:?}", pattern_model);
     let patterns = pattern_model.get_all_template_value_key();
-    println!("patterns = {:?}", patterns);
 
     let ref_patterns: Vec<&str> = patterns.iter().map(|e| e.as_str()).collect();
 
@@ -25,7 +23,5 @@ pub fn main() {
 
     pattern_model.replace_template_value(&patterns, &parse_result);
     let value = pattern_model.get_final_json_result();
-    println!("===============================");
-    println!("==============================={:?}",value.to_string());
-    // println!("to_json {:?}", pattern_model.)
+    println!("{:?}", value.to_string());
 }

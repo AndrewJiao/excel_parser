@@ -7,7 +7,7 @@ use crate::template::model::{BaseModel, ObjectType, ParseDescription};
 use crate::template::model::root_model::OriginMapRef;
 
 //解析json模板 用${}解析
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct ObjectModel {
     //替换parse用的,存入${any}
     //key = pattern:${any:number} value = json_index
@@ -20,7 +20,7 @@ pub struct ObjectModel {
     // 一个object有多个属性
     pub sub_model: HashMap<String, ObjectType>,
 
-    pub json_result: Option<Map<String, Value>>,
+    pub result: Option<Map<String, Value>>,
 }
 
 impl BaseModel for ObjectModel {
@@ -47,7 +47,6 @@ impl BaseModel for ObjectModel {
     /// pattern:可以通过get_all_template_value_key方法获取
     ///
     fn replace_template_value(&mut self, patterns: &Vec<String>, data: &Vec<HashMap<String, String>>) {
-        //先把自己替换了
         for head_value_map in data {
             let mut json_2_be_result = self.copy_json_template();
             self.do_replace(&mut json_2_be_result, &patterns, head_value_map);
@@ -56,7 +55,9 @@ impl BaseModel for ObjectModel {
         //考虑sub的情况
         self.sub_model.iter_mut().for_each(|(_, value)| {
             match value {
-                ObjectType::Array(arr) => { arr.replace_template_value(patterns, data); }
+                ObjectType::Array(arr) => {
+                    arr.replace_template_value(patterns, data);
+                }
                 ObjectType::Object(obj) => { obj.replace_template_value(patterns, data); }
                 ObjectType::None => {}
             }
@@ -64,7 +65,7 @@ impl BaseModel for ObjectModel {
     }
 
     fn get_final_json_result(&self) -> Value {
-        let clone_map: Option<Map<String, Value>> = self.json_result.clone();
+        let clone_map: Option<Map<String, Value>> = self.result.clone();
         if let Some(mut map) = clone_map {
             //考虑sub的情况
             self.sub_model.iter().for_each(|(key, value)| {
@@ -130,18 +131,24 @@ impl ObjectModel {
     ///
     ///
     pub fn push_json_result(&mut self, mut real_json: Map<String, Value>) {
-        if let Some(ref mut map) = self.json_result {
+        if let Some(ref mut map) = self.result {
             map.append(&mut real_json);
         } else {
-            self.json_result = Some(real_json)
+            self.result = Some(real_json)
         }
     }
 
-    // pub fn get_sub_model_template_value_key(&self) -> Vec<String> {
-    //     let mut current: Vec<String> = self.parser_index.iter().map(|(pattern, _)| pattern.to_string()).collect();
-    //     // self.sub_model
-    //     let mut sub: Vec<String> = self.sub_model.iter().flat_map(|(_, sub)| sub.get_all_template_value_key()).collect();
-    //     current.append(&mut sub);
-    //     current
-    // }
+    pub fn get_sub_model_template_value_key(&self) -> Vec<String> {
+        let mut current: Vec<String> = self.parser_index.iter().map(|(pattern, _)| pattern.to_string()).collect();
+        // self.sub_model
+        let mut sub: Vec<String> = self.sub_model.iter().flat_map(|(_, sub)| {
+            match sub {
+                ObjectType::Array(_) => {vec![]}
+                ObjectType::Object(obj) => {obj.get_all_template_value_key()}
+                ObjectType::None => {vec![]}
+            }
+        }).collect();
+        current.append(&mut sub);
+        current
+    }
 }

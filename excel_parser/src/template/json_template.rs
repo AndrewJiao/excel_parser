@@ -76,7 +76,7 @@ pub(crate) fn try_extract_object_model(parent_key: &str, origin_json: OriginMapR
         parser_index: res,
         json_template: origin_json,
         sub_model: sub_base_vec,
-        json_result: None,
+        result: None,
     }))
 }
 

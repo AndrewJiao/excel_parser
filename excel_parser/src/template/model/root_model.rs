@@ -48,22 +48,6 @@ impl BaseModel for RootModel {
         }
     }
 
-    fn get_sub_template(&self) -> Option<Map<String, Value>> {
-        match self.sub_model {
-            ObjectType::Array(_) => {}
-            ObjectType::Object(_) => {None}
-            ObjectType::None => {None}
-        }
-        if let Some(sub) = self.sub_model_array.get(0) {
-            match sub {
-                ObjectType::Array(e) => { e.get_sub_template() }
-                ObjectType::Object(e) => { Some(*(e.json_template.clone())) }
-                ObjectType::None => { None }
-            }
-        } else {
-            None
-        }
-    }
     fn get_final_json_result(&self) -> Value {
         match &self.sub_model {
             ObjectType::Array(value) => {
@@ -111,5 +95,22 @@ impl RootModel {
             _ => None
         }
     }
+    // pub fn get_sub_template(&mut self) -> Option<Map<String, Value>> {
+    //     match self.sub_model {
+    //         ObjectType::Array(ref mut arr) => {
+    //             if let Some(sub) = arr.get(0) {
+    //                 match sub {
+    //                     ObjectType::Array(e) => { e.get_sub_template() }
+    //                     ObjectType::Object(e) => { Some(*(e.json_template.clone())) }
+    //                     ObjectType::None => { None }
+    //                 }
+    //             } else {
+    //                 None
+    //             }
+    //         }
+    //         ObjectType::Object(_) => { None }
+    //         ObjectType::None => { None }
+    //     }
+    // }
 }
 
