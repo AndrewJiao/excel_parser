@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::vec::IntoIter;
 
 use serde_json::Value;
 
@@ -19,7 +18,6 @@ impl From<Vec<ObjectType>> for ArrayModel {
 
 #[derive(Debug, Clone)]
 pub struct ArrayModel {
-    // model_array: Vec<Box<ObjectModel>>,
     sub_model_array: Vec<ObjectType>,
 }
 
@@ -63,17 +61,18 @@ impl BaseModel for ArrayModel {
     /// 上面的模板只有一行数据，但是如果转出的结果有5条的话
     /// 则array需要考虑clone五个模板给ObjectModel处理数据
     ///
-    fn replace_template_value(&mut self, patterns: &Vec<String>, data: &Vec<HashMap<String, String>>) {
+    fn replace_template_value(&mut self, patterns: &[String], data: &[HashMap<String, String>]) {
         let mut new_data: Vec<ObjectType> = vec![];
         for obj_type in self.sub_model_array.iter_mut() {
             match obj_type {
                 ObjectType::Array(array) => {
                     array.replace_template_value(patterns, data);
                 }
+                //这是excel中的数据行
                 ObjectType::Object(obj) => {
                     let group_key = obj.get_sub_model_template_value_key();
                     let group_values: Vec<Vec<HashMap<String, String>>> = group_by(&group_key, data);
-                    println!("group_value = {:?}", group_values);
+                    //分组后的数据
                     for group_data in group_values {
                         //先clone，再插入
                         let mut new_obj = obj.clone();
@@ -104,7 +103,7 @@ impl BaseModel for ArrayModel {
 ///
 /// 根据给定的key，比较map里面的值，相同的分成一组
 ///
-fn group_by(group_keys: &Vec<String>, data: &Vec<HashMap<String, String>>) -> Vec<Vec<HashMap<String, String>>> {
+fn group_by(group_keys: &Vec<String>, data: &[HashMap<String, String>]) -> Vec<Vec<HashMap<String, String>>> {
     let mut groups: HashMap<String, Vec<HashMap<String, String>>> = HashMap::new();
 
     for entry in data {
@@ -117,7 +116,7 @@ fn group_by(group_keys: &Vec<String>, data: &Vec<HashMap<String, String>>) -> Ve
                 key_builder.push_str("missing");
             }
         }
-        groups.entry(key_builder).or_insert(Vec::new()).push(entry.clone());
+        groups.entry(key_builder).or_default().push(entry.clone());
     }
 
     let values = groups.into_values();
@@ -125,15 +124,5 @@ fn group_by(group_keys: &Vec<String>, data: &Vec<HashMap<String, String>>) -> Ve
 }
 
 
-
-impl ArrayModel {
-    pub fn iter(&self) -> std::slice::Iter<'_, ObjectType> {
-        self.sub_model_array.iter()
-    }
-
-    pub fn into_iter(self) -> IntoIter<ObjectType> {
-        self.sub_model_array.into_iter()
-    }
-}
 
 

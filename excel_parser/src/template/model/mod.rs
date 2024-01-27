@@ -1,11 +1,10 @@
-use std::any::Any;
 use std::collections::HashMap;
 
 use serde_json::Value;
+
+use crate::ParserError;
 use crate::template::model::array_model::ArrayModel;
 use crate::template::model::object_model::ObjectModel;
-
-use crate::template::template_trait::ParserError;
 
 pub mod root_model;
 pub mod object_model;
@@ -26,18 +25,8 @@ pub trait Parser {
     fn do_parse(&self, path: &str, header: &[&str]) -> Result<Vec<HashMap<String, String>>, ParserError>;
 }
 
-pub trait ToAny {
-    fn to_any(self: Box<Self>) -> Box<dyn Any>;
-}
 
-impl<T: BaseModel> ToAny for T {
-    fn to_any(self: Box<Self <>>) -> Box<dyn Any> {
-        self
-    }
-}
-
-
-pub trait BaseModel: ToAny + Any {
+pub trait BaseModel {
     ///
     /// 批量获取
     ///
@@ -48,9 +37,9 @@ pub trait BaseModel: ToAny + Any {
     /// patterns,所有的替换key
     /// data, 需要替换的值map
     ///
-    fn replace_template_value(&mut self, patterns: &Vec<String>, data: &Vec<HashMap<String, String>>);
+    fn replace_template_value(&mut self, patterns: &[String], data: &[HashMap<String, String>]);
     ///
-    /// 获取替换后的json
+    /// 获取json解析后的结果
     ///
     fn get_final_json_result(&self) -> Value;
 }
@@ -58,7 +47,7 @@ pub trait BaseModel: ToAny + Any {
 ///
 /// 用于存储表达式${?}
 ///
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct ParseDescription {
     pub json_index: Vec<String>,
     pub pattern_type: String,
@@ -95,7 +84,7 @@ impl ParseDescription {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub enum ObjectType {
     Array(ArrayModel),
     Object(ObjectModel),

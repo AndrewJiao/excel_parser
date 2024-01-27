@@ -172,6 +172,7 @@ version = "0.1.0"
 dependencies = [
  "dotenv",
  "excel_parser",
+ "serde_json",
 ]
 
 [[package]]

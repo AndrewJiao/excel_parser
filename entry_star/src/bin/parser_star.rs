@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::env;
 
+use excel_parser::output::OutPutJson;
+use excel_parser::output::regex::FileType;
 use excel_parser::template;
 use excel_parser::template::excel::ExcelParser;
 use excel_parser::template::model::{BaseModel, Parser};
@@ -23,5 +25,7 @@ pub fn main() {
 
     pattern_model.replace_template_value(&patterns, &parse_result);
     let value = pattern_model.get_final_json_result();
-    println!("{:?}", value.to_string());
+    let mut out_put = OutPutJson::new("result", FileType::JSON);
+    out_put.do_out_put(&value).expect("out put error");
+    println!("end")
 }

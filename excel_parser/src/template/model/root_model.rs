@@ -36,7 +36,7 @@ impl BaseModel for RootModel {
         }
     }
 
-    fn replace_template_value(&mut self, patterns: &Vec<String>, data: &Vec<HashMap<String, String>>) {
+    fn replace_template_value(&mut self, patterns: &[String], data: &[HashMap<String, String>]) {
         match &mut self.sub_model {
             ObjectType::Array(value) => {
                 value.replace_template_value(patterns, data)
@@ -69,25 +69,15 @@ impl RootModel {
         let mut file = File::open(path).expect("unKnow file json template");
         let context = &mut String::new();
         file.read_to_string(context).expect("read file error");
-        // let obj = serde_json::from_slice(context.as_bytes()).unwrap();
-        // let origin_json = Rc::new(obj);
-        // if let Some(sub_model) = json_template::try_extract_object_model("", Rc::clone(&origin_json)) {
-        //     Some(Box::from(RootModel { sub_model }))
-        // } else { None }
         match serde_json::from_slice(context.as_bytes()).unwrap() {
             Value::Object(obj) => {
-                let origin_json = Rc::new(obj);
-                if let Some(sub_model) = json_template::try_extract_object_model("", Rc::clone(&origin_json)) {
-                    Some(Box::from(RootModel { sub_model }))
-                } else { None }
+                json_template::try_extract_object_model("", obj)
+                    .map(|sub_model| Box::from(RootModel { sub_model }))
             }
             Value::Array(arr) => {
                 let sub_model = arr.into_iter().filter_map(|e| {
                     if let Value::Object(map) = e {
-                        let origin_json = Rc::new(map);
-                        if let Some(sub_model) = json_template::try_extract_object_model("", Rc::clone(&origin_json)) {
-                            Some(sub_model)
-                        } else { None }
+                        json_template::try_extract_object_model("", map)
                     } else { None }
                 }).collect::<Vec<_>>();
                 Some(Box::from(RootModel { sub_model: ObjectType::Array(sub_model.into()) }))
@@ -95,22 +85,5 @@ impl RootModel {
             _ => None
         }
     }
-    // pub fn get_sub_template(&mut self) -> Option<Map<String, Value>> {
-    //     match self.sub_model {
-    //         ObjectType::Array(ref mut arr) => {
-    //             if let Some(sub) = arr.get(0) {
-    //                 match sub {
-    //                     ObjectType::Array(e) => { e.get_sub_template() }
-    //                     ObjectType::Object(e) => { Some(*(e.json_template.clone())) }
-    //                     ObjectType::None => { None }
-    //                 }
-    //             } else {
-    //                 None
-    //             }
-    //         }
-    //         ObjectType::Object(_) => { None }
-    //         ObjectType::None => { None }
-    //     }
-    // }
 }
 

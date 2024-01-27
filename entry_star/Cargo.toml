@@ -8,7 +8,9 @@ edition.workspace = true
 [dependencies]
 dotenv.workspace = true
 excel_parser = {path = "../excel_parser"}
+serde_json.workspace = true
 
 [[bin]]
 name = "parser_star"
+
 
