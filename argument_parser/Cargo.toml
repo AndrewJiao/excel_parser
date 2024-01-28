@@ -1,0 +1,10 @@
+[package]
+name = "argument_parser"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dotenv.workspace = true
+clap = { features = ["derive"], workspace = true }

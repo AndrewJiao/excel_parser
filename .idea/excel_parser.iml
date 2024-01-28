@@ -6,6 +6,8 @@
       <sourceFolder url="file://$MODULE_DIR$/entry_star/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/excel_parser/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/argument_parser/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/argument_parser/tests" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

@@ -1,5 +1,5 @@
 [workspace]
-members = ["excel_parser", "entry_star"]
+members = ["excel_parser", "entry_star", "argument_parser"]
 resolver = "1"
 
 [workspace.package]
@@ -17,5 +17,7 @@ regex = "1.10.2"
 serde = "1.0.192"
 serde_json = "1.0.108"
 thiserror = "1.0.50"
+clap = "4.4.18"
+
 
 

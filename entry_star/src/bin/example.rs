@@ -1,13 +1,21 @@
-
-#[derive(Debug)]
-#[cfg(feature = "test")]
-struct Element {
-    data: i32,
-}
-
-#[cfg(feature = "test")]
 fn main() {
-
+    do_echo(A)
 }
 
-fn main() {}
+trait MyTrait {
+    fn echo(&self) {
+        println!("this is trait")
+    }
+}
+
+struct A;
+
+impl MyTrait for A {
+    fn echo(&self) {
+        (*self).echo()
+    }
+}
+
+fn do_echo<T: MyTrait>(t:T) {
+    t.echo()
+}

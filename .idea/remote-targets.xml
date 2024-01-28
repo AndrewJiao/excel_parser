@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteTargetsManager">
+    <targets>
+      <target name="WSL - Ubuntu-18.04" type="wsl" uuid="e9b41f27-4aae-4932-9720-ec9eb9db4e35">
+        <config>
+          <option name="distributionMsId" value="Ubuntu-18.04" />
+          <option name="projectRootOnTarget" value="{exitCode=0, timeout=false, cancelled=false, stdout=/mnt/d/work_software/jetbrains/RustRover/jbr/bin&#10;, stderr=}/excel_parser" />
+        </config>
+        <ContributedStateBase type="RsLanguageRuntime">
+          <config>
+            <option name="cargoPath" value="/root/.cargo/bin/cargo" />
+            <option name="cargoVersion" value="1.60.0 (d1fd9fe 2022-03-01)" />
+            <option name="rustcPath" value="/root/.cargo/bin/rustc" />
+            <option name="rustcVersion" value="1.60.0 (7737e0b5c 2022-04-04)" />
+          </config>
+        </ContributedStateBase>
+      </target>
+    </targets>
+  </component>
+</project>
