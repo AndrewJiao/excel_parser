@@ -28,5 +28,4 @@ pub fn main() {
     let value = pattern_model.get_final_json_result();
     let mut out_put = OutPutJson::new("result", FileType::JSON);
     out_put.do_out_put(&value).expect("out put error");
-    println!("end")
 }
