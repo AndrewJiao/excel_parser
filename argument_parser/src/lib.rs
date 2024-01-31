@@ -19,10 +19,18 @@ struct Cli {
     two: String,
     #[arg(long, short, default_value = "default_one")]
     one: String,
+    #[arg(value_enum)]
+    value:EnumValue,
 
     #[command(subcommand)]
     sub_command_enum: EnumSubCommand,
 }
+
+enum EnumValue{
+    ValueA,
+    ValueB
+}
+
 
 #[derive(Subcommand)]
 enum EnumSubCommand {
