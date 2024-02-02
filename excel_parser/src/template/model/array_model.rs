@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-
 use serde_json::Value;
 
 use crate::template::model::{BaseModel, ObjectType};
@@ -72,7 +71,7 @@ impl BaseModel for ArrayModel {
                 ObjectType::Object(obj) => {
                     let group_key = obj.get_sub_model_template_value_key();
                     let group_values: Vec<Vec<HashMap<String, String>>> = group_by(&group_key, data);
-                    //分组后的数据
+                    //分组后的数据,note:分组后顺序会被打乱
                     for group_data in group_values {
                         //先clone，再插入
                         let mut new_obj = obj.clone();
@@ -102,12 +101,18 @@ impl BaseModel for ArrayModel {
 
 ///
 /// 根据给定的key，比较map里面的值，相同的分成一组
+/// 需要保证顺序
 ///
 fn group_by(group_keys: &Vec<String>, data: &[HashMap<String, String>]) -> Vec<Vec<HashMap<String, String>>> {
-    let mut groups: HashMap<String, Vec<HashMap<String, String>>> = HashMap::new();
+    //key=字段和，value=分组的序号
+    let mut group_index: HashMap<String, usize> = HashMap::new();
 
+    //定义一个group用来封装值
+    let mut groups: Vec<Vec<HashMap<String, String>>> = Vec::new();
+    let mut index: usize = 0;
     for entry in data {
         let mut key_builder = String::new();
+
         for key in group_keys {
             if let Some(value) = entry.get(key) {
                 key_builder.push_str(value);
@@ -116,11 +121,15 @@ fn group_by(group_keys: &Vec<String>, data: &[HashMap<String, String>]) -> Vec<V
                 key_builder.push_str("missing");
             }
         }
-        groups.entry(key_builder).or_default().push(entry.clone());
+        if let Some(&key_index) = group_index.get(&key_builder) {
+            groups[key_index].push(entry.clone());
+        } else if let std::collections::hash_map::Entry::Vacant(e) = group_index.entry(key_builder) {
+            e.insert(index);
+            groups.push(vec![entry.clone()]);
+            index += 1;
+        }
     }
-
-    let values = groups.into_values();
-    values.collect()
+    groups
 }
 
 

@@ -69,6 +69,7 @@ impl SubFlattenValue {
                 (false, false, false) => cmd.error(ErrorKind::ArgumentConflict, "no that version can be choose").exit(),
             }
         }.to_string()
+
     }
 }
 
