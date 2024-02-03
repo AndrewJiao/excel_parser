@@ -3,21 +3,20 @@ use std::collections::HashMap;
 use regex::Regex;
 use serde_json::{Map, Value};
 
-use crate::template::model::{ObjectType, ParseDescription};
-use crate::template::model::array_model::ArrayModel;
-use crate::template::model::object_model::ObjectModel;
+use crate::ParserError;
+use crate::template::model::{ArrayModel, ModelType, ObjectModel, ParseDescription};
 use crate::template::model::root_model::RootModel;
 
-pub fn parse(path: &str) -> Option<Box<RootModel>> {
+pub fn parse(path: &str) -> Result<RootModel, ParserError> {
     RootModel::parse(path)
 }
 
 ///
 /// 写一个递归方法负责递归json所有节点，提取所有${}
 ///
-pub(crate) fn try_extract_object_model(parent_key: &str, origin_json: Map<String, Value>) -> Option<ObjectType> {
+pub(crate) fn try_extract_object_model(parent_key: &str, origin_json: Map<String, Value>) -> Option<ModelType> {
     let mut res: HashMap<String, ParseDescription> = HashMap::new();
-    let mut sub_base_vec: HashMap<String, ObjectType> = HashMap::new();
+    let mut sub_base_vec: HashMap<String, ModelType> = HashMap::new();
 
     let local_map: Map<String, Value> = origin_json.into_iter().filter_map(|(current_key, value)| {
         let current_path: String = if parent_key.is_empty() {
@@ -35,8 +34,8 @@ pub(crate) fn try_extract_object_model(parent_key: &str, origin_json: Map<String
                         } else { None }
                     })
                     .filter_map(|sub_e| try_extract_object_model("", sub_e))
-                    .collect::<Vec<ObjectType>>().into();
-                sub_base_vec.insert(current_key.to_string(), ObjectType::Array(array_model));
+                    .collect::<Vec<ModelType>>().into();
+                sub_base_vec.insert(current_key.to_string(), ModelType::Array(array_model));
                 None
             }
             Value::Object(sub_json) => {
@@ -62,7 +61,7 @@ pub(crate) fn try_extract_object_model(parent_key: &str, origin_json: Map<String
             _ => { None }
         }
     }).collect();
-    Some(ObjectType::Object(ObjectModel {
+    Some(ModelType::Object(ObjectModel {
         parser_index: res,
         json_template: local_map,
         sub_model: sub_base_vec,
@@ -101,6 +100,7 @@ fn extract(json: &str) -> Option<String> {
         None
     }
 }
+
 
 
 

@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use serde_json::Value;
 
-use crate::template::model::{BaseModel, ObjectType};
+use crate::template::model::{Model, ModelType};
 
-impl From<Vec<ObjectType>> for ArrayModel {
-    fn from(value: Vec<ObjectType>) -> Self {
+impl From<Vec<ModelType>> for ArrayModel {
+    fn from(value: Vec<ModelType>) -> Self {
         if value.is_empty() {
             ArrayModel { sub_model_array: vec![] }
         } else {
@@ -17,23 +17,23 @@ impl From<Vec<ObjectType>> for ArrayModel {
 
 #[derive(Debug, Clone)]
 pub struct ArrayModel {
-    sub_model_array: Vec<ObjectType>,
+    sub_model_array: Vec<ModelType>,
 }
 
 
-impl BaseModel for ArrayModel {
+impl Model for ArrayModel {
     fn get_all_template_value_key(&self) -> Vec<String> {
         self.sub_model_array
             .iter()
             .flat_map(|sub| {
                 match sub {
-                    ObjectType::Array(arr) => {
+                    ModelType::Array(arr) => {
                         arr.get_all_template_value_key()
                     }
-                    ObjectType::Object(obj) => {
+                    ModelType::Object(obj) => {
                         obj.get_all_template_value_key()
                     }
-                    ObjectType::None => { vec![] }
+                    ModelType::None => { vec![] }
                 }
             }).collect()
     }
@@ -61,14 +61,14 @@ impl BaseModel for ArrayModel {
     /// 则array需要考虑clone五个模板给ObjectModel处理数据
     ///
     fn replace_template_value(&mut self, patterns: &[String], data: &[HashMap<String, String>]) {
-        let mut new_data: Vec<ObjectType> = vec![];
+        let mut new_data: Vec<ModelType> = vec![];
         for obj_type in self.sub_model_array.iter_mut() {
             match obj_type {
-                ObjectType::Array(array) => {
+                ModelType::Array(array) => {
                     array.replace_template_value(patterns, data);
                 }
                 //这是excel中的数据行
-                ObjectType::Object(obj) => {
+                ModelType::Object(obj) => {
                     let group_key = obj.get_sub_model_template_value_key();
                     let group_values: Vec<Vec<HashMap<String, String>>> = group_by(&group_key, data);
                     //分组后的数据,note:分组后顺序会被打乱
@@ -76,10 +76,10 @@ impl BaseModel for ArrayModel {
                         //先clone，再插入
                         let mut new_obj = obj.clone();
                         new_obj.replace_template_value(patterns, &group_data);
-                        new_data.push(ObjectType::Object(new_obj));
+                        new_data.push(ModelType::Object(new_obj));
                     }
                 }
-                ObjectType::None => {}
+                ModelType::None => {}
             }
         }
         self.sub_model_array = new_data;
@@ -88,11 +88,11 @@ impl BaseModel for ArrayModel {
     fn get_final_json_result(&self) -> Value {
         let vec = self.sub_model_array.iter().map(|e| {
             match e {
-                ObjectType::Array(array) => {
+                ModelType::Array(array) => {
                     array.get_final_json_result()
                 }
-                ObjectType::Object(obj) => obj.get_final_json_result(),
-                ObjectType::None => Value::Null,
+                ModelType::Object(obj) => obj.get_final_json_result(),
+                ModelType::None => Value::Null,
             }
         }).collect::<Vec<_>>();
         Value::Array(vec)

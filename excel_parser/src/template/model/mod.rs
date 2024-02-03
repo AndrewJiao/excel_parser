@@ -2,33 +2,18 @@ use std::collections::HashMap;
 
 use serde_json::Value;
 
-use crate::ParserError;
-use crate::template::model::array_model::ArrayModel;
-use crate::template::model::object_model::ObjectModel;
+pub use crate::template::model::array_model::ArrayModel;
+pub use crate::template::model::object_model::ObjectModel;
 
 pub mod root_model;
-pub mod object_model;
-pub mod array_model;
+mod object_model;
+mod array_model;
+pub mod json_template;
 
 
-///
-/// 有多种实现
-///
-pub trait Parser {
+pub trait Model {
     ///
-    ///
-    /// path 路径
-    /// header
-    ///
-    /// return 以key-value形式的键值对
-    ///
-    fn do_parse(&self, path: &str, header: &[&str]) -> Result<Vec<HashMap<String, String>>, ParserError>;
-}
-
-
-pub trait BaseModel {
-    ///
-    /// 批量获取
+    /// 获取所有的key
     ///
     fn get_all_template_value_key(&self) -> Vec<String>;
 
@@ -85,7 +70,7 @@ impl ParseDescription {
 }
 
 #[derive(Debug, Clone)]
-pub enum ObjectType {
+pub enum ModelType {
     Array(ArrayModel),
     Object(ObjectModel),
     None,

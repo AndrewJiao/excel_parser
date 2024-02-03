@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde_json::{Map, Value};
 
-use crate::template::model::{BaseModel, ObjectType, ParseDescription};
+use crate::template::model::{Model, ModelType, ParseDescription};
 
 //解析json模板 用${}解析
 #[derive(Debug, Clone)]
@@ -16,12 +16,12 @@ pub struct ObjectModel {
     pub json_template: Map<String,Value>,
 
     // 一个object有多个属性
-    pub sub_model: HashMap<String, ObjectType>,
+    pub sub_model: HashMap<String, ModelType>,
 
     pub result: Option<Map<String, Value>>,
 }
 
-impl BaseModel for ObjectModel {
+impl Model for ObjectModel {
     ///
     /// 获取所有要替换的template_key
     ///
@@ -29,12 +29,12 @@ impl BaseModel for ObjectModel {
         let mut current: Vec<String> = self.parser_index.keys().map(|e|e.to_string()).collect();
         let _ = &self.sub_model.iter().for_each(|(_, sub)| {
             match sub {
-                ObjectType::Array(array) => {
+                ModelType::Array(array) => {
                     let mut sub = array.get_all_template_value_key();
                     current.append(&mut sub);
                 }
-                ObjectType::Object(obj) => current.append(&mut obj.get_all_template_value_key()),
-                ObjectType::None => {}
+                ModelType::Object(obj) => current.append(&mut obj.get_all_template_value_key()),
+                ModelType::None => {}
             }
         });
         current
@@ -55,13 +55,13 @@ impl BaseModel for ObjectModel {
         //考虑sub的情况
         self.sub_model.iter_mut().for_each(|(_, value)| {
             match value {
-                ObjectType::Array(arr) => {
+                ModelType::Array(arr) => {
                     arr.replace_template_value(patterns, data);
                 }
-                ObjectType::Object(obj) => {
+                ModelType::Object(obj) => {
                     obj.replace_template_value(patterns, data);
                 }
-                ObjectType::None => {}
+                ModelType::None => {}
             }
         })
     }
@@ -72,15 +72,15 @@ impl BaseModel for ObjectModel {
             //考虑sub的情况
             self.sub_model.iter().for_each(|(key, value)| {
                 match value {
-                    ObjectType::Array(arr) => {
+                    ModelType::Array(arr) => {
                         let json_values = arr.get_final_json_result();
                         map.insert(key.to_string(), json_values);
                     }
-                    ObjectType::Object(obj) => {
+                    ModelType::Object(obj) => {
                         let json_value = obj.get_final_json_result();
                         map.insert(key.to_string(), json_value);
                     }
-                    ObjectType::None => {}
+                    ModelType::None => {}
                 }
             });
             Value::Object(map)
@@ -142,9 +142,9 @@ impl ObjectModel {
         // self.sub_model
         let mut sub: Vec<String> = self.sub_model.iter().flat_map(|(_, sub)| {
             match sub {
-                ObjectType::Array(_) => { vec![] }
-                ObjectType::Object(obj) => { obj.get_all_template_value_key() }
-                ObjectType::None => { vec![] }
+                ModelType::Array(_) => { vec![] }
+                ModelType::Object(obj) => { obj.get_all_template_value_key() }
+                ModelType::None => { vec![] }
             }
         }).collect();
         current.append(&mut sub);

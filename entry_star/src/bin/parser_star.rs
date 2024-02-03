@@ -4,9 +4,8 @@ use std::env;
 use excel_parser::output::OutPutJson;
 use excel_parser::output::regex::FileType;
 use excel_parser::template;
+use excel_parser::template::{Model, Parser};
 use excel_parser::template::excel::ExcelParser;
-use excel_parser::template::model::{BaseModel, Parser};
-use excel_parser::template::model::root_model::RootModel;
 
 pub fn main() {
     dotenv::dotenv().ok();
@@ -14,7 +13,7 @@ pub fn main() {
     let template_path = env::var("JSON_TEMPLATE_PATH").expect("no source");
 
     //解析
-    let mut pattern_model: Box<RootModel> = template::json_template::parse(&template_path).unwrap();
+    let mut pattern_model  = template::json_template::parse(&template_path).expect("parse json success");
 
     //获取所有的keys
     let patterns = pattern_model.get_all_template_value_key();

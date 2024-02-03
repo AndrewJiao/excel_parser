@@ -1,8 +1,8 @@
 use std::env::VarError;
-use thiserror::Error;
 
-pub mod template;
+use thiserror::Error;
 pub mod output;
+pub mod template;
 
 #[derive(Debug, Error)]
 pub enum ParserError {
