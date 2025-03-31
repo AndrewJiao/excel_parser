@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use calamine::{DataType, open_workbook, RangeDeserializerBuilder, Reader, Xlsx};
+use calamine::{DataType, open_workbook, RangeDeserializerBuilder, Reader, Xlsx, Data};
 
 use crate::ParserError;
 use crate::template::Parser;
@@ -12,14 +12,14 @@ impl Parser for ExcelParser {
     fn do_parse(&self, path: &str, headers: &[&str]) -> Result<Vec<HashMap<String, String>>, ParserError> {
         let mut result: Vec<HashMap<String, String>> = Vec::new();
         let mut work_book: Xlsx<_> = open_workbook(path)?;
-        if let Some(Ok(ref range)) = work_book.worksheet_range("Sheet1") {
+        if let Ok(ref range) = work_book.worksheet_range("Sheet1") {
             //过滤一下headers里面没有的字段
             let (_, len) = range.end().unwrap();
             let first_range = range.clone().range((0, 0), (0, len));
 
             let real_headers = first_range.rows().next().unwrap()
                 .iter().filter_map(|e| {
-                if let DataType::String(e) = e {
+                if let Data::String(e) = e {
                     Some(e.as_str())
                 } else {
                     None
