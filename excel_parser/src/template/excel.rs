@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use calamine::{DataType, open_workbook, RangeDeserializerBuilder, Reader, Xlsx, Data};
+use calamine::{open_workbook, Data, RangeDeserializerBuilder, Reader, Xlsx};
 
-use crate::ParserError;
 use crate::template::Parser;
+use crate::ParserError;
 
 pub struct ExcelParser;
 

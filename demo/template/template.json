@@ -1,0 +1,13 @@
+[
+    {
+        "id": "${id:num}",
+        "name": "${姓名}",
+        "age": "${年龄:num}",
+        "sub": [
+            {
+                "sub_name": "${sub_name}",
+                "sub_age": "${sub_title}"
+            }
+        ]
+    }
+]
