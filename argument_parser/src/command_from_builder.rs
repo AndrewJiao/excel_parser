@@ -1,7 +1,7 @@
 use std::ffi::OsString;
 use std::path::PathBuf;
 
-use clap::{arg, Command};
+use clap::{arg, Arg, Command};
 
 fn cli() -> Command {
     Command::new("git")
@@ -18,7 +18,7 @@ fn cli() -> Command {
         .subcommand(
             Command::new("diff")
                 .about("Compare two commits")
-                .arg(arg!(base: [COMMIT]))
+                .arg(Arg::new("base").required(true))
                 .arg(arg!(head: [COMMIT]))
                 .arg(arg!(path: [PATH]).last(true))
                 .arg(
