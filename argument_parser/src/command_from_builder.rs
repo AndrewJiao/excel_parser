@@ -2,6 +2,7 @@ use std::ffi::OsString;
 use std::path::PathBuf;
 
 use clap::{arg, Arg, Command};
+use crate::command_reader::{execute_command, AutoCommand};
 
 fn cli() -> Command {
     Command::new("git")

@@ -7,6 +7,9 @@ use excel_parser::template;
 use excel_parser::template::{Model, Parser};
 use excel_parser::template::excel::ExcelParser;
 
+///
+/// demo 演示入口
+///
 pub fn main() {
     dotenv::dotenv().ok();
     let excel_path = env::var("EXCEL_SOURCE").expect("no source");
