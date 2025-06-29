@@ -1,76 +1,77 @@
-name: git
-about: A fictional versioning CLI
-subcommands:
-  - name: clone
-    about: Clones repos
-    args:
-      - name: REMOTE
-        help: The remote to clone
-        required: true
-    arg_required_else_help: true
+test:
+  name: git
+  about: A fictional versioning CLI
+  subcommands:
+    - name: clone
+      about: Clones repos
+      args:
+        - name: REMOTE
+          help: The remote to clone
+          required: true
+      arg_required_else_help: true
 
-  - name: diff
-    about: Compare two commits
-    args:
-      - name: base
-        required: true
-      - name: head
-        required: false
-      - name: path
-        required: false
-        last: true
-      - name: color
-        short: c
-        long: color
-        value_name: WHEN
-        value_parser: [ always, auto, never ]
-        num_args: 0..=1
-        require_equals: true
-        default_value: auto
-        default_missing_value: always
+    - name: diff
+      about: Compare two commits
+      args:
+        - name: base
+          required: true
+        - name: head
+          required: false
+        - name: path
+          required: false
+          last: true
+        - name: color
+          short: c
+          long: color
+          value_name: WHEN
+          value_parser: [ always, auto, never ]
+          num_args: 0..=1
+          require_equals: true
+          default_value: auto
+          default_missing_value: always
 
-  - name: push
-    about: pushes things
-    args:
-      - name: REMOTE
-        help: The remote to target
-        required: true
-    arg_required_else_help: true
+    - name: push
+      about: pushes things
+      args:
+        - name: REMOTE
+          help: The remote to target
+          required: true
+      arg_required_else_help: true
 
-  - name: add
-    about: adds things
-    args:
-      - name: PATH
-        help: Stuff to add
-        required: true
-        multiple: true
-        value_parser: PathBuf
-    arg_required_else_help: true
+    - name: add
+      about: adds things
+      args:
+        - name: PATH
+          help: Stuff to add
+          required: true
+          multiple: true
+          value_parser: PathBuf
+      arg_required_else_help: true
 
-  - name: stash
-    about: ""
-    args_conflicts_with_subcommands: true
-    flatten_help: true
-    args:
-      - name: message
-        short: m
-        long: message
-        value_name: MESSAGE
-    subcommands:
-      - name: push
-        args:
-          - name: message
-            short: m
-            long: message
-            value_name: MESSAGE
-      - name: pop
-        args:
-          - name: STASH
-            required: false
-      - name: apply
-        args:
-          - name: STASH
-            required: false
-allow_external_subcommands: true
-subcommand_required: true
-arg_required_else_help: true
+    - name: stash
+      about: ""
+      args_conflicts_with_subcommands: true
+      flatten_help: true
+      args:
+        - name: message
+          short: m
+          long: message
+          value_name: MESSAGE
+      subcommands:
+        - name: push
+          args:
+            - name: message
+              short: m
+              long: message
+              value_name: MESSAGE
+        - name: pop
+          args:
+            - name: STASH
+              required: false
+        - name: apply
+          args:
+            - name: STASH
+              required: false
+  allow_external_subcommands: true
+  subcommand_required: true
+  arg_required_else_help: true

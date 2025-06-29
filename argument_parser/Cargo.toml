@@ -7,4 +7,5 @@ edition.workspace = true
 
 [dependencies]
 dotenv.workspace = true
+serde.workspace = true
 clap = { features = ["derive"], workspace = true }
