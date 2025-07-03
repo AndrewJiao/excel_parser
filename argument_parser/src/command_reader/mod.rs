@@ -30,6 +30,7 @@ pub struct AutoArgument {
 ///
 /// 针对当前的命令类型创建命令
 ///
+#[cfg(feature = "command_from_builder")]
 pub fn execute_base_commands(cmd: &HashMap<String, AutoCommand>) -> () {
     let mut cmd = Command::new("");
     for (name, command) in cmd {
@@ -71,6 +72,7 @@ pub fn execute_command(cmd: &AutoCommand) -> Command {
     command
 }
 
+#[cfg(feature = "command_from_builder")]
 pub fn execute_arg(arg: &AutoArgument) -> Arg {
     let mut command_arg = Arg::new(&arg.name);
 
